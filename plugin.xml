@@ -1,0 +1,41 @@
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0" id="scandit-cordova-datacapture-label" version="8.2.0">
+    <name>ScanditLabelCapture</name>
+    <js-module name="Scandit" src="dist/index.js">
+        <runs />
+        <merges target="Scandit" />
+    </js-module>
+    <engines>
+        <engine name="cordova-ios" version=">=5.0.0" />
+        <engine name="cordova-android" version=">=7.0.0" />
+    </engines>
+    <platform name="ios">
+        <config-file parent="/*" target="config.xml">
+            <feature name="ScanditLabelCapture">
+                <param name="ios-package" value="ScanditLabelCapture" />
+                <param name="onload" value="true" />
+            </feature>
+        </config-file>
+        <header-file src="src/ios/ScanditLabelCapture-Bridging-Header.h" type="BridgingHeader" />
+        <source-file src="src/ios/ScanditLabelCapture.swift" />
+        <dependency id="scandit-cordova-datacapture-core" version="8.2.0" />
+        <dependency id="scandit-cordova-datacapture-barcode" version="8.2.0" />
+        <podspec>
+            <pods use-frameworks="true">
+                <pod name="scandit-datacapture-frameworks-label" spec="= 8.2.0" />
+            </pods>
+        </podspec>
+    </platform>
+    <platform name="android">
+        <config-file parent="/*" target="config.xml">
+            <feature name="ScanditLabelCapture">
+                <param name="android-package" value="com.scandit.datacapture.cordova.label.ScanditLabelCapture" />
+            </feature>
+        </config-file>
+        <source-file src="src/android/ScanditLabelCapture.kt" target-dir="kotlin/com/scandit/datacapture/cordova/label" />
+        <dependency id="scandit-cordova-datacapture-core" version="8.2.0" />
+        <dependency id="scandit-cordova-datacapture-barcode" version="8.2.0" />
+        <framework custom="true" src="src/android/build.gradle" type="gradleReference" />
+        <framework src="androidx.appcompat:appcompat:1.1.0" />
+        <hook src="src/hooks/support-kotlin.js" type="after_plugin_install" />
+    </platform>
+</plugin>
