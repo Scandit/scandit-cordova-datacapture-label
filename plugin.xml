@@ -1,4 +1,4 @@
-<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0" id="scandit-cordova-datacapture-label" version="8.2.0">
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0" id="scandit-cordova-datacapture-label" version="8.2.1">
     <name>ScanditLabelCapture</name>
     <js-module name="Scandit" src="dist/index.js">
         <runs />
@@ -17,11 +17,11 @@
         </config-file>
         <header-file src="src/ios/ScanditLabelCapture-Bridging-Header.h" type="BridgingHeader" />
         <source-file src="src/ios/ScanditLabelCapture.swift" />
-        <dependency id="scandit-cordova-datacapture-core" version="8.2.0" />
-        <dependency id="scandit-cordova-datacapture-barcode" version="8.2.0" />
+        <dependency id="scandit-cordova-datacapture-core" version="8.2.1" />
+        <dependency id="scandit-cordova-datacapture-barcode" version="8.2.1" />
         <podspec>
             <pods use-frameworks="true">
-                <pod name="scandit-datacapture-frameworks-label" spec="= 8.2.0" />
+                <pod name="scandit-datacapture-frameworks-label" spec="= 8.2.1" />
             </pods>
         </podspec>
     </platform>
@@ -32,8 +32,8 @@
             </feature>
         </config-file>
         <source-file src="src/android/ScanditLabelCapture.kt" target-dir="kotlin/com/scandit/datacapture/cordova/label" />
-        <dependency id="scandit-cordova-datacapture-core" version="8.2.0" />
-        <dependency id="scandit-cordova-datacapture-barcode" version="8.2.0" />
+        <dependency id="scandit-cordova-datacapture-core" version="8.2.1" />
+        <dependency id="scandit-cordova-datacapture-barcode" version="8.2.1" />
         <framework custom="true" src="src/android/build.gradle" type="gradleReference" />
         <framework src="androidx.appcompat:appcompat:1.1.0" />
         <hook src="src/hooks/support-kotlin.js" type="after_plugin_install" />

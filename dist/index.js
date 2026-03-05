@@ -528,10 +528,13 @@ class LabelCaptureSession {
     get frameSequenceID() {
         return this._frameSequenceID;
     }
-    static fromJSON(json) {
+    static fromJSON(payload) {
+        var _a;
+        const sessionJson = JSON.parse(payload.session);
         const session = new LabelCaptureSession();
-        session._frameSequenceID = json.frameSequenceId;
-        session._capturedLabels = json.labels
+        session._frameSequenceID = sessionJson.frameSequenceId;
+        session.frameId = (_a = payload.frameId) !== null && _a !== void 0 ? _a : '';
+        session._capturedLabels = sessionJson.labels
             .map(CapturedLabel.fromJSON);
         session._capturedLabels
             .forEach(label => label.frameSequenceID = session._frameSequenceID);
@@ -1033,6 +1036,7 @@ class LabelCaptureController extends scanditDatacaptureFrameworksCore.BaseContro
     constructor(mode) {
         super('LabelCaptureProxy');
         this.mode = mode;
+        this.frameDataController = new scanditDatacaptureFrameworksCore.FrameDataController();
         this.adapter = new LabelProxyAdapter(this._proxy);
         this.initialize().catch(error => console.error('Failed to initialize LabelCaptureController:', error));
     }
@@ -1080,7 +1084,7 @@ class LabelCaptureController extends scanditDatacaptureFrameworksCore.BaseContro
     handleDidUpdateSessionEvent(ev) {
         return __awaiter$1(this, void 0, void 0, function* () {
             const payload = JSON.parse(ev.data);
-            const session = LabelCaptureSession.fromJSON(JSON.parse(payload.session));
+            const session = LabelCaptureSession.fromJSON(payload);
             this.notifyListenersOfDidUpdateSession(session);
             yield this.adapter.finishLabelCaptureListenerDidUpdateSession({ modeId: this.modeId, isEnabled: this.mode.isEnabled });
         });
@@ -1089,10 +1093,12 @@ class LabelCaptureController extends scanditDatacaptureFrameworksCore.BaseContro
         return this.mode.modeId;
     }
     notifyListenersOfDidUpdateSession(session) {
-        const mode = this.mode;
-        mode.listeners.forEach(listener => {
-            if (listener.didUpdateSession) {
-                listener.didUpdateSession(this.mode, session);
+        return __awaiter$1(this, void 0, void 0, function* () {
+            const mode = this.mode;
+            for (const listener of mode.listeners) {
+                if (listener.didUpdateSession) {
+                    yield listener.didUpdateSession(this.mode, session, () => this.frameDataController.getFrameOrNull(session['frameId']));
+                }
             }
         });
     }
