@@ -1,5 +1,5 @@
 var scanditDatacaptureFrameworksCore = cordova.require('scandit-cordova-datacapture-core.Scandit').__ScanditCore;
-var scanditDatacaptureFrameworksBarcode = cordova.require('scandit-cordova-datacapture-core.Scandit').__ScanditBarcode;
+var scanditDatacaptureFrameworksBarcode = cordova.require('scandit-cordova-datacapture-barcode.Scandit').__ScanditBarcode;
 var scanditCordovaDatacaptureCore = cordova.require('scandit-cordova-datacapture-core.Scandit');
 
 function ensureLabelCaptureDefaults() {
@@ -39,6 +39,11 @@ function parseLabelCaptureDefaults(jsonDefaults) {
                     validationErrorText: jsonDefaults.LabelCapture.LabelCaptureValidationFlowOverlay.Settings.validationErrorText,
                     requiredFieldErrorText: jsonDefaults.LabelCapture.LabelCaptureValidationFlowOverlay.Settings.requiredFieldErrorText,
                     manualInputButtonText: jsonDefaults.LabelCapture.LabelCaptureValidationFlowOverlay.Settings.manualInputButtonText,
+                    validationFinishButtonText: jsonDefaults.LabelCapture.LabelCaptureValidationFlowOverlay.Settings.validationFinishButtonText,
+                    validationRestartButtonText: jsonDefaults.LabelCapture.LabelCaptureValidationFlowOverlay.Settings.validationRestartButtonText,
+                    validationPauseButtonText: jsonDefaults.LabelCapture.LabelCaptureValidationFlowOverlay.Settings.validationPauseButtonText,
+                    validationAdaptiveScanningText: jsonDefaults.LabelCapture.LabelCaptureValidationFlowOverlay.Settings.validationAdaptiveScanningText,
+                    validationScanningText: jsonDefaults.LabelCapture.LabelCaptureValidationFlowOverlay.Settings.validationScanningText,
                 }
             },
             Feedback: {
@@ -47,6 +52,12 @@ function parseLabelCaptureDefaults(jsonDefaults) {
         },
     };
 }
+
+exports.AdaptiveRecognitionMode = void 0;
+(function (AdaptiveRecognitionMode) {
+    AdaptiveRecognitionMode["Off"] = "off";
+    AdaptiveRecognitionMode["Auto"] = "auto";
+})(exports.AdaptiveRecognitionMode || (exports.AdaptiveRecognitionMode = {}));
 
 exports.AdaptiveRecognitionResultType = void 0;
 (function (AdaptiveRecognitionResultType) {
@@ -108,11 +119,20 @@ class LabelFieldDefinition extends scanditDatacaptureFrameworksCore.DefaultSeria
     set valueRegexes(value) {
         this._valueRegexes = value;
     }
+    setValueRegex(valueRegex) {
+        this._valueRegexes = [...this._valueRegexes, valueRegex];
+    }
     get optional() {
         return this._optional;
     }
     set optional(value) {
         this._optional = value;
+    }
+    get numberOfMandatoryInstances() {
+        return this._numberOfMandatoryInstances;
+    }
+    set numberOfMandatoryInstances(value) {
+        this._numberOfMandatoryInstances = value;
     }
     get hiddenProperties() {
         return this._hiddenProperties;
@@ -135,6 +155,7 @@ class LabelFieldDefinition extends scanditDatacaptureFrameworksCore.DefaultSeria
         super();
         this._valueRegexes = [];
         this._optional = false;
+        this._numberOfMandatoryInstances = null;
         this._hiddenProperties = {};
         this._name = name;
     }
@@ -148,6 +169,9 @@ __decorate([
 __decorate([
     scanditDatacaptureFrameworksCore.nameForSerialization('optional')
 ], LabelFieldDefinition.prototype, "_optional", void 0);
+__decorate([
+    scanditDatacaptureFrameworksCore.nameForSerialization('number_of_mandatory_instances')
+], LabelFieldDefinition.prototype, "_numberOfMandatoryInstances", void 0);
 __decorate([
     scanditDatacaptureFrameworksCore.ignoreFromSerialization
 ], LabelFieldDefinition.prototype, "_hiddenProperties", void 0);
@@ -238,6 +262,7 @@ class LabelField {
         field._barcode = json.barcode ? scanditDatacaptureFrameworksBarcode.Barcode['fromJSON'](json.barcode) : null;
         field._text = json.text;
         field._dateResult = json.date ? LabelDateResult.fromJSON(json.date) : null;
+        field._valueType = json.valueType;
         return field;
     }
     get name() {
@@ -260,6 +285,9 @@ class LabelField {
     }
     get text() {
         return this._text;
+    }
+    get valueType() {
+        return this._valueType;
     }
     asDate() {
         return this._dateResult;
@@ -343,6 +371,12 @@ class CustomBarcode extends BarcodeField {
     get symbologies() {
         return super.symbologySettings;
     }
+    get numberOfMandatoryInstances() {
+        return super.numberOfMandatoryInstances;
+    }
+    set numberOfMandatoryInstances(value) {
+        super.numberOfMandatoryInstances = value;
+    }
 }
 __decorate([
     scanditDatacaptureFrameworksCore.nameForSerialization('location')
@@ -383,6 +417,12 @@ class CustomText extends TextField {
     get isOptional() {
         return super.optional;
     }
+    get numberOfMandatoryInstances() {
+        return super.numberOfMandatoryInstances;
+    }
+    set numberOfMandatoryInstances(value) {
+        super.numberOfMandatoryInstances = value;
+    }
 }
 __decorate([
     scanditDatacaptureFrameworksCore.nameForSerialization('location')
@@ -393,6 +433,52 @@ __decorate([
 __decorate([
     scanditDatacaptureFrameworksCore.nameForSerialization('fieldType')
 ], CustomText.prototype, "_fieldType", void 0);
+
+class DateText extends TextField {
+    constructor(name, labelDateFormat) {
+        super(name);
+        this._fieldType = 'dateText';
+        this._anchorRegexes = null;
+        this._labelDateFormat = labelDateFormat;
+    }
+    get labelDateFormat() {
+        return this._labelDateFormat;
+    }
+    get anchorRegexes() {
+        var _a;
+        return (_a = this._anchorRegexes) !== null && _a !== void 0 ? _a : [];
+    }
+    set anchorRegexes(value) {
+        this._anchorRegexes = value;
+    }
+    get name() {
+        return super.name;
+    }
+    get valueRegexes() {
+        return super.valueRegexes;
+    }
+    set valueRegexes(value) {
+        super.valueRegexes = value;
+    }
+    get isOptional() {
+        return super.optional;
+    }
+    get numberOfMandatoryInstances() {
+        return super.numberOfMandatoryInstances;
+    }
+    set numberOfMandatoryInstances(value) {
+        super.numberOfMandatoryInstances = value;
+    }
+}
+__decorate([
+    scanditDatacaptureFrameworksCore.nameForSerialization('fieldType')
+], DateText.prototype, "_fieldType", void 0);
+__decorate([
+    scanditDatacaptureFrameworksCore.nameForSerialization('dataTypePatterns')
+], DateText.prototype, "_anchorRegexes", void 0);
+__decorate([
+    scanditDatacaptureFrameworksCore.nameForSerialization('labelDateFormat')
+], DateText.prototype, "_labelDateFormat", void 0);
 
 class ExpiryDateText extends TextField {
     constructor(name) {
@@ -425,6 +511,12 @@ class ExpiryDateText extends TextField {
     }
     get isOptional() {
         return super.optional;
+    }
+    get numberOfMandatoryInstances() {
+        return super.numberOfMandatoryInstances;
+    }
+    set numberOfMandatoryInstances(value) {
+        super.numberOfMandatoryInstances = value;
     }
 }
 __decorate([
@@ -470,6 +562,12 @@ class ImeiOneBarcode extends BarcodeField {
     get symbologies() {
         return super.symbologySettings;
     }
+    get numberOfMandatoryInstances() {
+        return super.numberOfMandatoryInstances;
+    }
+    set numberOfMandatoryInstances(value) {
+        super.numberOfMandatoryInstances = value;
+    }
     constructor(name, symbologies) {
         super(name, symbologies);
         this._fieldType = 'imeiOneBarcode';
@@ -512,6 +610,12 @@ class ImeiTwoBarcode extends BarcodeField {
     get symbologies() {
         return super.symbologySettings;
     }
+    get numberOfMandatoryInstances() {
+        return super.numberOfMandatoryInstances;
+    }
+    set numberOfMandatoryInstances(value) {
+        super.numberOfMandatoryInstances = value;
+    }
     constructor(name, symbologies) {
         super(name, symbologies);
         this._fieldType = 'imeiTwoBarcode';
@@ -528,11 +632,15 @@ class LabelCaptureSession {
     get frameSequenceID() {
         return this._frameSequenceID;
     }
+    get lastProcessedFrameId() {
+        return this._lastProcessedFrameId;
+    }
     static fromJSON(payload) {
         var _a;
         const sessionJson = JSON.parse(payload.session);
         const session = new LabelCaptureSession();
         session._frameSequenceID = sessionJson.frameSequenceId;
+        session._lastProcessedFrameId = sessionJson.lastFrameId;
         session.frameId = (_a = payload.frameId) !== null && _a !== void 0 ? _a : '';
         session._capturedLabels = sessionJson.labels
             .map(CapturedLabel.fromJSON);
@@ -1026,6 +1134,19 @@ class LabelProxyAdapter {
             return result;
         });
     }
+    /**
+     * Finish callback for label capture did update session event
+     */
+    finishValidationFlowResultUpdateEvent() {
+        return __awaiter$1(this, void 0, void 0, function* () {
+            const result = yield this.proxy.$executeLabel({
+                moduleName: 'LabelCaptureModule',
+                methodName: 'finishValidationFlowResultUpdateEvent',
+                isEventRegistration: false,
+            });
+            return result;
+        });
+    }
 }
 
 var LabelCaptureListenerEvents;
@@ -1068,7 +1189,10 @@ class LabelCaptureController extends scanditDatacaptureFrameworksCore.BaseContro
         });
     }
     updateFeedback(feedback) {
-        return this.adapter.updateLabelCaptureFeedback({ modeId: this.modeId, feedbackJson: JSON.stringify(feedback.toJSON()) });
+        return this.adapter.updateLabelCaptureFeedback({
+            modeId: this.modeId,
+            feedbackJson: JSON.stringify(feedback.toJSON()),
+        });
     }
     dispose() {
         void this.unsubscribeLabelCaptureListener();
@@ -1083,10 +1207,20 @@ class LabelCaptureController extends scanditDatacaptureFrameworksCore.BaseContro
     }
     handleDidUpdateSessionEvent(ev) {
         return __awaiter$1(this, void 0, void 0, function* () {
-            const payload = JSON.parse(ev.data);
+            const payload = scanditDatacaptureFrameworksCore.EventDataParser.parseIfShouldHandle(ev, { modeId: this.modeId });
+            if (payload === scanditDatacaptureFrameworksCore.SKIP) {
+                return;
+            }
+            if (payload === null) {
+                console.error('LabelCaptureController didUpdateSession payload is null');
+                return;
+            }
             const session = LabelCaptureSession.fromJSON(payload);
-            this.notifyListenersOfDidUpdateSession(session);
-            yield this.adapter.finishLabelCaptureListenerDidUpdateSession({ modeId: this.modeId, isEnabled: this.mode.isEnabled });
+            yield this.notifyListenersOfDidUpdateSession(session);
+            yield this.adapter.finishLabelCaptureListenerDidUpdateSession({
+                modeId: this.modeId,
+                isEnabled: this.mode.isEnabled,
+            });
         });
     }
     get modeId() {
@@ -1097,7 +1231,7 @@ class LabelCaptureController extends scanditDatacaptureFrameworksCore.BaseContro
             const mode = this.mode;
             for (const listener of mode.listeners) {
                 if (listener.didUpdateSession) {
-                    yield listener.didUpdateSession(this.mode, session, () => this.frameDataController.getFrameOrNull(session['frameId']));
+                    yield listener.didUpdateSession(this.mode, session, () => this.frameDataController.getFrame(session['frameId']));
                 }
             }
         });
@@ -1406,7 +1540,14 @@ class LabelCaptureAdvancedOverlayController extends scanditDatacaptureFrameworks
     }
     handleViewForLabel(ev) {
         return __awaiter$1(this, void 0, void 0, function* () {
-            const payload = JSON.parse(ev.data);
+            const payload = scanditDatacaptureFrameworksCore.EventDataParser.parseIfShouldHandle(ev, { viewId: this.dataCaptureViewId });
+            if (payload === scanditDatacaptureFrameworksCore.SKIP) {
+                return;
+            }
+            if (payload === null) {
+                console.error('LabelCaptureAdvancedOverlayController viewForLabel payload is null');
+                return;
+            }
             let view = null;
             const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
             if (this.overlay.listener && this.overlay.listener.viewForCapturedLabel) {
@@ -1417,7 +1558,14 @@ class LabelCaptureAdvancedOverlayController extends scanditDatacaptureFrameworks
     }
     handleAnchorForLabel(ev) {
         return __awaiter$1(this, void 0, void 0, function* () {
-            const payload = JSON.parse(ev.data);
+            const payload = scanditDatacaptureFrameworksCore.EventDataParser.parseIfShouldHandle(ev, { viewId: this.dataCaptureViewId });
+            if (payload === scanditDatacaptureFrameworksCore.SKIP) {
+                return;
+            }
+            if (payload === null) {
+                console.error('LabelCaptureAdvancedOverlayController anchorForLabel payload is null');
+                return;
+            }
             let anchor = scanditDatacaptureFrameworksCore.Anchor.Center;
             const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
             if (this.overlay.listener && this.overlay.listener.anchorForCapturedLabel) {
@@ -1428,7 +1576,14 @@ class LabelCaptureAdvancedOverlayController extends scanditDatacaptureFrameworks
     }
     handleViewForCapturedLabelField(ev) {
         return __awaiter$1(this, void 0, void 0, function* () {
-            const payload = JSON.parse(ev.data);
+            const payload = scanditDatacaptureFrameworksCore.EventDataParser.parseIfShouldHandle(ev, { viewId: this.dataCaptureViewId });
+            if (payload === scanditDatacaptureFrameworksCore.SKIP) {
+                return;
+            }
+            if (payload === null) {
+                console.error('LabelCaptureAdvancedOverlayController viewForCapturedLabelField payload is null');
+                return;
+            }
             let view = null;
             const field = LabelField.fromJSON(JSON.parse(payload.field));
             if (this.overlay.listener && this.overlay.listener.viewForCapturedLabelField) {
@@ -1439,7 +1594,14 @@ class LabelCaptureAdvancedOverlayController extends scanditDatacaptureFrameworks
     }
     handleOffsetForLabel(ev) {
         return __awaiter$1(this, void 0, void 0, function* () {
-            const payload = JSON.parse(ev.data);
+            const payload = scanditDatacaptureFrameworksCore.EventDataParser.parseIfShouldHandle(ev, { viewId: this.dataCaptureViewId });
+            if (payload === scanditDatacaptureFrameworksCore.SKIP) {
+                return;
+            }
+            if (payload === null) {
+                console.error('LabelCaptureAdvancedOverlayController offsetForLabel payload is null');
+                return;
+            }
             let offset = scanditDatacaptureFrameworksCore.PointWithUnit.zero;
             const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
             if (this.overlay.listener && this.overlay.listener.offsetForCapturedLabel) {
@@ -1450,7 +1612,14 @@ class LabelCaptureAdvancedOverlayController extends scanditDatacaptureFrameworks
     }
     handleAnchorForCapturedLabelField(ev) {
         return __awaiter$1(this, void 0, void 0, function* () {
-            const payload = JSON.parse(ev.data);
+            const payload = scanditDatacaptureFrameworksCore.EventDataParser.parseIfShouldHandle(ev, { viewId: this.dataCaptureViewId });
+            if (payload === scanditDatacaptureFrameworksCore.SKIP) {
+                return;
+            }
+            if (payload === null) {
+                console.error('LabelCaptureAdvancedOverlayController anchorForCapturedLabelField payload is null');
+                return;
+            }
             let anchor = scanditDatacaptureFrameworksCore.Anchor.Center;
             const field = LabelField.fromJSON(JSON.parse(payload.field));
             if (this.overlay.listener && this.overlay.listener.anchorForCapturedLabelField) {
@@ -1461,7 +1630,14 @@ class LabelCaptureAdvancedOverlayController extends scanditDatacaptureFrameworks
     }
     handleOffsetForCapturedLabelField(ev) {
         return __awaiter$1(this, void 0, void 0, function* () {
-            const payload = JSON.parse(ev.data);
+            const payload = scanditDatacaptureFrameworksCore.EventDataParser.parseIfShouldHandle(ev, { viewId: this.dataCaptureViewId });
+            if (payload === scanditDatacaptureFrameworksCore.SKIP) {
+                return;
+            }
+            if (payload === null) {
+                console.error('LabelCaptureAdvancedOverlayController offsetForCapturedLabelField payload is null');
+                return;
+            }
             let offset = scanditDatacaptureFrameworksCore.PointWithUnit.zero;
             const field = LabelField.fromJSON(JSON.parse(payload.field));
             if (this.overlay.listener && this.overlay.listener.offsetForCapturedLabelField) {
@@ -1659,6 +1835,18 @@ class LabelDefinition extends scanditDatacaptureFrameworksCore.DefaultSerializea
     set fields(values) {
         this._fields = values;
     }
+    addField(field) {
+        this._fields.push(field);
+    }
+    addFields(fields) {
+        this._fields.push(...fields);
+    }
+    get adaptiveRecognitionMode() {
+        return this._adaptiveRecognitionMode;
+    }
+    set adaptiveRecognitionMode(value) {
+        this._adaptiveRecognitionMode = value;
+    }
     get hiddenProperties() {
         return this._hiddenProperties;
     }
@@ -1702,6 +1890,7 @@ class LabelDefinition extends scanditDatacaptureFrameworksCore.DefaultSerializea
         this._name = '';
         this._fields = [];
         this._type = null;
+        this._adaptiveRecognitionMode = exports.AdaptiveRecognitionMode.Off;
         this._hiddenProperties = {};
         this._name = name;
     }
@@ -1716,6 +1905,9 @@ __decorate([
     scanditDatacaptureFrameworksCore.nameForSerialization('type'),
     scanditDatacaptureFrameworksCore.ignoreFromSerializationIfNull
 ], LabelDefinition.prototype, "_type", void 0);
+__decorate([
+    scanditDatacaptureFrameworksCore.nameForSerialization('adaptiveRecognitionMode')
+], LabelDefinition.prototype, "_adaptiveRecognitionMode", void 0);
 __decorate([
     scanditDatacaptureFrameworksCore.ignoreFromSerialization
 ], LabelDefinition.prototype, "_hiddenProperties", void 0);
@@ -1823,6 +2015,15 @@ exports.LabelFieldType = void 0;
     LabelFieldType["Unknown"] = "unknown";
 })(exports.LabelFieldType || (exports.LabelFieldType = {}));
 
+exports.LabelFieldValueType = void 0;
+(function (LabelFieldValueType) {
+    LabelFieldValueType["Date"] = "date";
+    LabelFieldValueType["Price"] = "price";
+    LabelFieldValueType["Weight"] = "weight";
+    LabelFieldValueType["Text"] = "text";
+    LabelFieldValueType["Numeric"] = "numeric";
+})(exports.LabelFieldValueType || (exports.LabelFieldValueType = {}));
+
 class PackingDateText extends TextField {
     constructor(name) {
         super(name);
@@ -1851,6 +2052,12 @@ class PackingDateText extends TextField {
     }
     set valueRegexes(value) {
         super.valueRegexes = value;
+    }
+    get numberOfMandatoryInstances() {
+        return super.numberOfMandatoryInstances;
+    }
+    set numberOfMandatoryInstances(value) {
+        super.numberOfMandatoryInstances = value;
     }
 }
 __decorate([
@@ -1899,6 +2106,12 @@ class PartNumberBarcode extends BarcodeField {
     }
     get symbologies() {
         return super.symbologySettings;
+    }
+    get numberOfMandatoryInstances() {
+        return super.numberOfMandatoryInstances;
+    }
+    set numberOfMandatoryInstances(value) {
+        super.numberOfMandatoryInstances = value;
     }
 }
 __decorate([
@@ -2060,6 +2273,12 @@ class SerialNumberBarcode extends BarcodeField {
     get symbologies() {
         return super.symbologySettings;
     }
+    get numberOfMandatoryInstances() {
+        return super.numberOfMandatoryInstances;
+    }
+    set numberOfMandatoryInstances(value) {
+        super.numberOfMandatoryInstances = value;
+    }
 }
 __decorate([
     scanditDatacaptureFrameworksCore.nameForSerialization('fieldType')
@@ -2089,6 +2308,12 @@ class TotalPriceText extends TextField {
     }
     set valueRegexes(value) {
         super.valueRegexes = value;
+    }
+    get numberOfMandatoryInstances() {
+        return super.numberOfMandatoryInstances;
+    }
+    set numberOfMandatoryInstances(value) {
+        super.numberOfMandatoryInstances = value;
     }
 }
 __decorate([
@@ -2123,6 +2348,12 @@ class UnitPriceText extends TextField {
     set valueRegexes(value) {
         super.valueRegexes = value;
     }
+    get numberOfMandatoryInstances() {
+        return super.numberOfMandatoryInstances;
+    }
+    set numberOfMandatoryInstances(value) {
+        super.numberOfMandatoryInstances = value;
+    }
 }
 __decorate([
     scanditDatacaptureFrameworksCore.nameForSerialization('fieldType')
@@ -2155,6 +2386,12 @@ class WeightText extends TextField {
     }
     set valueRegexes(value) {
         super.valueRegexes = value;
+    }
+    get numberOfMandatoryInstances() {
+        return super.numberOfMandatoryInstances;
+    }
+    set numberOfMandatoryInstances(value) {
+        super.numberOfMandatoryInstances = value;
     }
 }
 __decorate([
@@ -2261,7 +2498,14 @@ class LabelCaptureBasicOverlayController extends scanditDatacaptureFrameworksCor
     }
     handleBrushForFieldOfLabel(ev) {
         return __awaiter$1(this, void 0, void 0, function* () {
-            const payload = JSON.parse(ev.data);
+            const payload = scanditDatacaptureFrameworksCore.EventDataParser.parseIfShouldHandle(ev, { viewId: this.dataCaptureViewId });
+            if (payload === scanditDatacaptureFrameworksCore.SKIP) {
+                return;
+            }
+            if (payload === null) {
+                console.error('LabelCaptureBasicOverlayController brushForFieldOfLabel payload is null');
+                return;
+            }
             let brush = this.overlay.capturedFieldBrush;
             const field = LabelField.fromJSON(JSON.parse(payload.field));
             const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
@@ -2273,7 +2517,14 @@ class LabelCaptureBasicOverlayController extends scanditDatacaptureFrameworksCor
     }
     handleBrushForLabel(ev) {
         return __awaiter$1(this, void 0, void 0, function* () {
-            const payload = JSON.parse(ev.data);
+            const payload = scanditDatacaptureFrameworksCore.EventDataParser.parseIfShouldHandle(ev, { viewId: this.dataCaptureViewId });
+            if (payload === scanditDatacaptureFrameworksCore.SKIP) {
+                return;
+            }
+            if (payload === null) {
+                console.error('LabelCaptureBasicOverlayController brushForLabel payload is null');
+                return;
+            }
             let brush = this.overlay.labelBrush;
             const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
             if (this.overlay.listener && this.overlay.listener.brushForLabel) {
@@ -2283,7 +2534,14 @@ class LabelCaptureBasicOverlayController extends scanditDatacaptureFrameworksCor
         });
     }
     handleDidTapLabel(ev) {
-        const payload = JSON.parse(ev.data);
+        const payload = scanditDatacaptureFrameworksCore.EventDataParser.parseIfShouldHandle(ev, { viewId: this.dataCaptureViewId });
+        if (payload === scanditDatacaptureFrameworksCore.SKIP) {
+            return;
+        }
+        if (payload === null) {
+            console.error('LabelCaptureBasicOverlayController didTapLabel payload is null');
+            return;
+        }
         if (this.overlay.listener && this.overlay.listener.didTapLabel) {
             const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
             this.overlay.listener.didTapLabel(this.overlay, label);
@@ -2437,6 +2695,7 @@ var LabelCaptureValidationFlowListenerEvents;
 (function (LabelCaptureValidationFlowListenerEvents) {
     LabelCaptureValidationFlowListenerEvents["didCaptureLabelWithFields"] = "LabelCaptureValidationFlowListener.didCaptureLabelWithFields";
     LabelCaptureValidationFlowListenerEvents["didSubmitManualInputForField"] = "LabelCaptureValidationFlowListener.didSubmitManualInputForField";
+    LabelCaptureValidationFlowListenerEvents["didUpdateValidationFlowResult"] = "LabelCaptureValidationFlowListener.didUpdateValidationFlowResult";
 })(LabelCaptureValidationFlowListenerEvents || (LabelCaptureValidationFlowListenerEvents = {}));
 class LabelCaptureValidationFlowOverlayController extends scanditDatacaptureFrameworksCore.BaseController {
     constructor(overlay) {
@@ -2450,13 +2709,20 @@ class LabelCaptureValidationFlowOverlayController extends scanditDatacaptureFram
         this.handleDidSubmitManualInputForFieldEventWrapper = (ev) => {
             this.handleDidSubmitManualInputForFieldEvent(ev);
         };
+        this.handleDidUpdateValidationFlowResultEventWrapper = (ev) => __awaiter$1(this, void 0, void 0, function* () {
+            yield this.handleDidUpdateValidationFlowResult(ev);
+        });
         this.overlay = overlay;
         this.adapter = new LabelProxyAdapter(this._proxy);
+        this.frameDataController = new scanditDatacaptureFrameworksCore.FrameDataController();
         void this.initialize();
     }
     updateValidationFlowOverlay() {
         return __awaiter$1(this, void 0, void 0, function* () {
-            yield this.adapter.updateLabelCaptureValidationFlowOverlay({ dataCaptureViewId: this.dataCaptureViewId, overlayJson: JSON.stringify(this.overlay.toJSON()) });
+            yield this.adapter.updateLabelCaptureValidationFlowOverlay({
+                dataCaptureViewId: this.dataCaptureViewId,
+                overlayJson: JSON.stringify(this.overlay.toJSON()),
+            });
         });
     }
     subscribeLabelCaptureValidationFlowListener() {
@@ -2467,6 +2733,7 @@ class LabelCaptureValidationFlowOverlayController extends scanditDatacaptureFram
             this._proxy.subscribeForEvents(Object.values(LabelCaptureValidationFlowListenerEvents));
             this._proxy.eventEmitter.on(LabelCaptureValidationFlowListenerEvents.didCaptureLabelWithFields, this.handleDidCaptureLabelWithFieldsEventWrapper);
             this._proxy.eventEmitter.on(LabelCaptureValidationFlowListenerEvents.didSubmitManualInputForField, this.handleDidSubmitManualInputForFieldEventWrapper);
+            this._proxy.eventEmitter.on(LabelCaptureValidationFlowListenerEvents.didUpdateValidationFlowResult, this.handleDidUpdateValidationFlowResultEventWrapper);
             this.isSubscribed = true;
             if (this.dataCaptureViewId !== -1) {
                 yield this.adapter.registerListenerForValidationFlowEvents({ dataCaptureViewId: this.dataCaptureViewId });
@@ -2511,14 +2778,52 @@ class LabelCaptureValidationFlowOverlayController extends scanditDatacaptureFram
         });
     }
     handleDidCaptureLabelWithFieldsEvent(ev) {
-        const payload = JSON.parse(ev.data);
-        const fields = payload.fields.map((field) => LabelField.fromJSON(JSON.parse(field)));
+        const payload = scanditDatacaptureFrameworksCore.EventDataParser.parseIfShouldHandle(ev, {
+            viewId: this.dataCaptureViewId,
+        });
+        if (payload === scanditDatacaptureFrameworksCore.SKIP) {
+            return;
+        }
+        if (payload === null) {
+            console.error('LabelCaptureValidationFlowOverlayController didCaptureLabelWithFields payload is null');
+            return;
+        }
+        const fields = payload.fields.map(field => LabelField.fromJSON(JSON.parse(field)));
         this.notifyListenersOfDidCaptureLabelWithFields(fields);
     }
     handleDidSubmitManualInputForFieldEvent(ev) {
-        const payload = JSON.parse(ev.data);
+        const payload = scanditDatacaptureFrameworksCore.EventDataParser.parseIfShouldHandle(ev, {
+            viewId: this.dataCaptureViewId,
+        });
+        if (payload === scanditDatacaptureFrameworksCore.SKIP) {
+            return;
+        }
+        if (payload === null) {
+            console.error('LabelCaptureValidationFlowOverlayController didSubmitManualInputForField payload is null');
+            return;
+        }
         const field = LabelField.fromJSON(JSON.parse(payload.fields[0]));
         this.notifyListenersOfDidSubmitManualInputForField(field, payload.oldValue, payload.newValue);
+    }
+    handleDidUpdateValidationFlowResult(ev) {
+        return __awaiter$1(this, void 0, void 0, function* () {
+            var _a;
+            const payload = scanditDatacaptureFrameworksCore.EventDataParser.parseIfShouldHandle(ev, {
+                viewId: this.dataCaptureViewId,
+            });
+            if (payload === scanditDatacaptureFrameworksCore.SKIP) {
+                return;
+            }
+            if (payload === null) {
+                console.error('LabelCaptureValidationFlowOverlayController didUpdateValidationFlowResult payload is null');
+                return;
+            }
+            const fields = payload.fields.map(field => LabelField.fromJSON(JSON.parse(field)));
+            const frameId = payload.frameId;
+            const asyncId = payload.asyncId;
+            yield ((_a = this.overlay.listener) === null || _a === void 0 ? void 0 : _a.didUpdateValidationFlowResult(payload.type, asyncId, fields, () => frameId ? this.frameDataController.getFrame(frameId) : Promise.resolve(null)));
+            yield this.adapter.finishValidationFlowResultUpdateEvent();
+        });
     }
     notifyListenersOfDidCaptureLabelWithFields(fields) {
         var _a;
@@ -2535,6 +2840,14 @@ class LabelCaptureValidationFlowOverlayController extends scanditDatacaptureFram
 }
 
 class LabelCaptureValidationFlowOverlay extends scanditDatacaptureFrameworksCore.DefaultSerializeable {
+    get shouldHandleKeyboardInsetsInternally() {
+        return this._shouldHandleKeyboardInsetsInternally;
+    }
+    set shouldHandleKeyboardInsetsInternally(value) {
+        var _a;
+        this._shouldHandleKeyboardInsetsInternally = value;
+        void ((_a = this.controller) === null || _a === void 0 ? void 0 : _a.updateValidationFlowOverlay());
+    }
     get view() {
         return this._view;
     }
@@ -2561,6 +2874,7 @@ class LabelCaptureValidationFlowOverlay extends scanditDatacaptureFrameworksCore
         this._listener = null;
         this.controller = null;
         this._view = null;
+        this._shouldHandleKeyboardInsetsInternally = true;
         this.modeId = mode.modeId;
     }
     get listener() {
@@ -2595,6 +2909,9 @@ __decorate([
 __decorate([
     scanditDatacaptureFrameworksCore.ignoreFromSerialization
 ], LabelCaptureValidationFlowOverlay.prototype, "_view", void 0);
+__decorate([
+    scanditDatacaptureFrameworksCore.nameForSerialization('shouldHandleKeyboardInsetsInternally')
+], LabelCaptureValidationFlowOverlay.prototype, "_shouldHandleKeyboardInsetsInternally", void 0);
 
 class LabelCaptureValidationFlowSettings extends scanditDatacaptureFrameworksCore.DefaultSerializeable {
     static create() {
@@ -2610,6 +2927,11 @@ class LabelCaptureValidationFlowSettings extends scanditDatacaptureFrameworksCor
         this._validationErrorText = defaults.validationErrorText;
         this._requiredFieldErrorText = defaults.requiredFieldErrorText;
         this._manualInputButtonText = defaults.manualInputButtonText;
+        this._finishButtonText = defaults.validationFinishButtonText;
+        this._restartButtonText = defaults.validationRestartButtonText;
+        this._pauseButtonText = defaults.validationPauseButtonText;
+        this._adaptiveScanningText = defaults.validationAdaptiveScanningText;
+        this._scanningText = defaults.validationScanningText;
     }
     /**
      * @deprecated This property is deprecated and will be removed in a future release.
@@ -2668,6 +2990,36 @@ class LabelCaptureValidationFlowSettings extends scanditDatacaptureFrameworksCor
         console.warn('manualInputButtonText is deprecated and will be removed in a future release.');
         this._manualInputButtonText = text;
     }
+    get finishButtonText() {
+        return this._finishButtonText;
+    }
+    set finishButtonText(text) {
+        this._finishButtonText = text;
+    }
+    get restartButtonText() {
+        return this._restartButtonText;
+    }
+    set restartButtonText(text) {
+        this._restartButtonText = text;
+    }
+    get pauseButtonText() {
+        return this._pauseButtonText;
+    }
+    set pauseButtonText(text) {
+        this._pauseButtonText = text;
+    }
+    get adaptiveScanningText() {
+        return this._adaptiveScanningText;
+    }
+    set adaptiveScanningText(text) {
+        this._adaptiveScanningText = text;
+    }
+    get scanningText() {
+        return this._scanningText;
+    }
+    set scanningText(text) {
+        this._scanningText = text;
+    }
     setPlaceholderTextForLabelDefinition(fieldName, placeholder) {
         if (placeholder === null) {
             this._labelDefinitionsPlaceholders.delete(fieldName);
@@ -2711,8 +3063,30 @@ __decorate([
     scanditDatacaptureFrameworksCore.nameForSerialization('manualInputButtonText')
 ], LabelCaptureValidationFlowSettings.prototype, "_manualInputButtonText", void 0);
 __decorate([
+    scanditDatacaptureFrameworksCore.nameForSerialization('validationFinishButtonText')
+], LabelCaptureValidationFlowSettings.prototype, "_finishButtonText", void 0);
+__decorate([
+    scanditDatacaptureFrameworksCore.nameForSerialization('validationRestartButtonText')
+], LabelCaptureValidationFlowSettings.prototype, "_restartButtonText", void 0);
+__decorate([
+    scanditDatacaptureFrameworksCore.nameForSerialization('validationPauseButtonText')
+], LabelCaptureValidationFlowSettings.prototype, "_pauseButtonText", void 0);
+__decorate([
+    scanditDatacaptureFrameworksCore.nameForSerialization('validationAdaptiveScanningText')
+], LabelCaptureValidationFlowSettings.prototype, "_adaptiveScanningText", void 0);
+__decorate([
+    scanditDatacaptureFrameworksCore.nameForSerialization('validationScanningText')
+], LabelCaptureValidationFlowSettings.prototype, "_scanningText", void 0);
+__decorate([
     scanditDatacaptureFrameworksCore.ignoreFromSerialization
 ], LabelCaptureValidationFlowSettings.prototype, "_labelDefinitionsPlaceholders", void 0);
+
+exports.LabelResultUpdateType = void 0;
+(function (LabelResultUpdateType) {
+    LabelResultUpdateType["AsyncFinished"] = "AsyncFinished";
+    LabelResultUpdateType["AsyncStarted"] = "AsyncStarted";
+    LabelResultUpdateType["Sync"] = "Sync";
+})(exports.LabelResultUpdateType || (exports.LabelResultUpdateType = {}));
 
 var LabelCaptureAdaptiveRecognitionListenerEvents;
 (function (LabelCaptureAdaptiveRecognitionListenerEvents) {
@@ -2799,7 +3173,14 @@ class LabelCaptureAdaptiveRecognitionOverlayController extends scanditDatacaptur
     }
     handleRecognized(ev) {
         var _a;
-        const payload = JSON.parse(ev.data);
+        const payload = scanditDatacaptureFrameworksCore.EventDataParser.parseIfShouldHandle(ev, { viewId: this.dataCaptureViewId });
+        if (payload === scanditDatacaptureFrameworksCore.SKIP) {
+            return;
+        }
+        if (payload === null) {
+            console.error('LabelCaptureAdaptiveRecognitionOverlayController recognized payload is null');
+            return;
+        }
         (_a = this.overlay.listener) === null || _a === void 0 ? void 0 : _a.didRecognize(payload.result);
     }
     handleFailure() {
@@ -2950,7 +3331,7 @@ LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
 OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 ***************************************************************************** */
-/* global Reflect, Promise, SuppressedError, Symbol */
+/* global Reflect, Promise, SuppressedError, Symbol, Iterator */
 
 
 function __awaiter(thisArg, _arguments, P, generator) {
@@ -2959,7 +3340,7 @@ function __awaiter(thisArg, _arguments, P, generator) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
+        step((generator = generator.apply(thisArg, [])).next());
     });
 }
 
@@ -3039,6 +3420,7 @@ exports.BarcodeField = BarcodeField;
 exports.CapturedLabel = CapturedLabel;
 exports.CustomBarcode = CustomBarcode;
 exports.CustomText = CustomText;
+exports.DateText = DateText;
 exports.ExpiryDateText = ExpiryDateText;
 exports.ImeiOneBarcode = ImeiOneBarcode;
 exports.ImeiTwoBarcode = ImeiTwoBarcode;
