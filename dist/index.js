@@ -57,6 +57,7 @@ exports.AdaptiveRecognitionMode = void 0;
 (function (AdaptiveRecognitionMode) {
     AdaptiveRecognitionMode["Off"] = "off";
     AdaptiveRecognitionMode["Auto"] = "auto";
+    AdaptiveRecognitionMode["On"] = "on";
 })(exports.AdaptiveRecognitionMode || (exports.AdaptiveRecognitionMode = {}));
 
 exports.AdaptiveRecognitionResultType = void 0;

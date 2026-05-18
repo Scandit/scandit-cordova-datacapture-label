@@ -1,6 +1,11 @@
 import ScanditFrameworksCore
 import ScanditFrameworksLabel
 
+#if SWIFT_PACKAGE
+import Cordova
+import ScanditCordovaDatacaptureCore
+#endif
+
 @objc(ScanditLabelCapture)
 public class ScanditLabelCapture: CDVPlugin {
     var labelModule: LabelCaptureModule!
