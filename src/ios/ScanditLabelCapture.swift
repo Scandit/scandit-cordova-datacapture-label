@@ -14,7 +14,7 @@ public class ScanditLabelCapture: CDVPlugin {
     override public func pluginInitialize() {
         super.pluginInitialize()
         emitter = CordovaEventEmitter(commandDelegate: commandDelegate)
-        labelModule = LabelCaptureModule(emitter: emitter)
+        labelModule = LabelCaptureModule(emitter: RegistryEmitter(platformEmitter: emitter))
         labelModule.didStart()
     }
 
@@ -56,9 +56,9 @@ public class ScanditLabelCapture: CDVPlugin {
         }
     }
 
-    @objc(getDefaults:)
-    func getDefaults(command: CDVInvokedUrlCommand) {
-        let defaults = labelModule.getDefaults()
+    @objc(getDynamicDefaults:)
+    func getDynamicDefaults(command: CDVInvokedUrlCommand) {
+        let defaults = labelModule.getDynamicDefaults()
         let defaultsResult = ["LabelCapture": defaults]
         commandDelegate.send(
             .success(message: defaultsResult as CDVPluginResult.JSONMessage),
