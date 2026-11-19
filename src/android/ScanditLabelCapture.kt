@@ -12,7 +12,6 @@ import com.scandit.datacapture.cordova.core.utils.CordovaMethodCall
 import com.scandit.datacapture.cordova.core.utils.CordovaResult
 import com.scandit.datacapture.cordova.core.utils.PluginMethod
 import com.scandit.datacapture.frameworks.core.CoreModule
-import com.scandit.datacapture.frameworks.core.listeners.registry.RegistryEmitter
 import com.scandit.datacapture.frameworks.core.locator.DefaultServiceLocator
 import com.scandit.datacapture.frameworks.label.LabelCaptureModule
 import org.apache.cordova.CallbackContext
@@ -25,7 +24,7 @@ class ScanditLabelCapture :
 
     private val emitter = CordovaEventEmitter()
 
-    private val labelCaptureModule = LabelCaptureModule(RegistryEmitter(emitter))
+    private val labelCaptureModule = LabelCaptureModule(emitter)
 
     private var lastLabelCaptureEnabledState: Boolean = false
 
@@ -63,7 +62,7 @@ class ScanditLabelCapture :
     ): Boolean {
         return when (action) {
             "executeLabel" -> executeLabel(args, callbackContext)
-            "getDynamicDefaults" -> getDynamicDefaults(callbackContext)
+            "getDefaults" -> getDefaults(callbackContext)
             else -> false
         }.let { true }
     }
@@ -89,11 +88,11 @@ class ScanditLabelCapture :
     }
 
     @PluginMethod
-    fun getDynamicDefaults(callbackContext: CallbackContext) {
+    fun getDefaults(callbackContext: CallbackContext) {
         callbackContext.success(
             JSONObject(
                 mapOf(
-                    "LabelCapture" to labelCaptureModule.getDynamicDefaults()
+                    "LabelCapture" to labelCaptureModule.getDefaults()
                 )
             )
         )
